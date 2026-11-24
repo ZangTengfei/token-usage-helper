@@ -1,0 +1,2 @@
+# The updater fixture is signed byte-for-byte; never convert its line endings.
+desktop/token-usage-tauri/src-tauri/tests/fixtures/update.bin -text
