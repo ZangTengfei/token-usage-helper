@@ -1,0 +1,85 @@
+{
+  "name": "aiclub-usage-desktop",
+  "version": "0.5.12",
+  "private": true,
+  "description": "常州 AI Club Token 用量助手",
+  "author": "常州 AI Club",
+  "type": "module",
+  "main": "main.mjs",
+  "scripts": {
+    "prepare:app": "node scripts/prepare.mjs",
+    "dev": "npm run prepare:app && electron .",
+    "pack:mac": "npm run prepare:app && electron-builder --mac dir --arm64",
+    "test": "node --test tests/*.test.mjs",
+    "verify:ui": "node scripts/verify-ui.mjs",
+    "pack:win": "npm run prepare:app && electron-builder --win dir --x64"
+  },
+  "devDependencies": {
+    "electron": "44.4.1",
+    "electron-builder": "26.15.3",
+    "playwright-core": "1.63.0",
+    "sharp": "0.34.5"
+  },
+  "build": {
+    "appId": "club.changzhouai.usage",
+    "productName": "AI Club Token 用量助手",
+    "directories": {
+      "output": "../../output/token-usage-desktop"
+    },
+    "files": [
+      "main.mjs",
+      "preload.cjs",
+      "core.mjs",
+      "renderer/**/*",
+      "vendor/collector.mjs",
+      "vendor/local-usage-adapters.mjs",
+      "package.json",
+      "vendor/icon.png",
+      "vendor/build-config.json",
+      "branding.mjs",
+      "vendor/tray*.png"
+    ],
+    "extraResources": [
+      {
+        "from": "vendor/tokscale-LICENSE",
+        "to": "collector/LICENSE"
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "vendor/icon.icns",
+      "identity": null,
+      "target": [
+        "dir"
+      ],
+      "extraResources": [
+        {
+          "from": "vendor/tokscale",
+          "to": "collector/tokscale"
+        },
+        {
+          "from": "vendor/libFoundationModels.dylib",
+          "to": "collector/libFoundationModels.dylib"
+        }
+      ]
+    },
+    "asar": true,
+    "win": {
+      "target": [
+        "dir"
+      ],
+      "icon": "vendor/icon.png",
+      "extraResources": [
+        {
+          "from": "vendor/tokscale.exe",
+          "to": "collector/tokscale.exe"
+        }
+      ],
+      "signExecutable": false
+    }
+  },
+  "optionalDependencies": {
+    "@tokscale/cli-darwin-arm64": "4.23.1",
+    "@tokscale/cli-win32-x64-msvc": "4.23.1"
+  }
+}

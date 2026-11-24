@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <title>Token 用量速览</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="tray-body">
+    <main class="tray-shell">
+      <header class="tray-header">
+        <img src="../vendor/icon.png" alt="" />
+        <div>
+          AI Club Token 用量助手
+          <div id="tray-status" class="tray-status"></div>
+        </div>
+      </header>
+      <div class="tray-period">今日 Token · 包含缓存</div>
+      <div id="tray-today" class="tray-number">—</div>
+      <div class="tray-trend-heading">
+        <span>近 7 天 Token</span><strong id="tray-week-total">—</strong>
+      </div>
+      <div class="tray-period">K=千，M=百万，B=十亿</div>
+      <div
+        id="bars"
+        class="bars"
+        role="group"
+        aria-label="近七天 Token 用量"
+      ></div>
+      <div id="bar-labels" class="bar-labels" aria-hidden="true"></div>
+      <p id="tray-time" class="tray-foot"></p>
+      <p id="tray-message" class="tray-message" role="status" hidden></p>
+      <div class="tray-divider"></div>
+      <div class="tray-actions">
+        <button id="tray-open" class="primary">打开面板</button
+        ><button id="tray-sync">读取并同步</button>
+      </div>
+      <div class="tray-links">
+        <button id="tray-settings">设置</button
+        ><button id="tray-board">社区榜单 ↗</button
+        ><button id="tray-quit">退出</button>
+      </div>
+    </main>
+    <script type="module" src="tray.js"></script>
+  </body>
+</html>

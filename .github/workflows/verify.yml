@@ -1,0 +1,32 @@
+name: 验证 Token 用量助手
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            desktop/token-usage-tauri/package-lock.json
+      - run: npm ci
+      - run: npm ci --prefix desktop/token-usage-tauri
+      - run: npm run check:sources
+      - run: npm run test:native
+      - run: npm run test:collector
+      - run: npm test

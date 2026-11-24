@@ -1,0 +1,6 @@
+{
+  "identifier": "desktop",
+  "description": "Local usage UI can receive sanitized state events only.",
+  "windows": ["main", "tray"],
+  "permissions": ["core:event:allow-listen", "core:event:allow-unlisten"]
+}

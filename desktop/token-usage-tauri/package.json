@@ -1,0 +1,21 @@
+{
+  "name": "aiclub-usage-tauri",
+  "version": "0.5.19",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "prepare:app": "node scripts/prepare.mjs",
+    "build": "node scripts/build.mjs",
+    "test": "node scripts/build.mjs --test",
+    "verify:windows": "node scripts/smoke.mjs --verify-windows",
+    "verify:updater": "node scripts/verify-updater-ui.mjs"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0",
+    "playwright-core": "1.63.0"
+  },
+  "optionalDependencies": {
+    "@tokscale/cli-darwin-arm64": "4.23.1",
+    "@tokscale/cli-win32-x64-msvc": "4.23.1"
+  }
+}

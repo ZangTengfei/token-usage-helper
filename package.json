@@ -1,0 +1,19 @@
+{
+  "name": "token-usage-helper",
+  "version": "0.5.19",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "npm test --prefix desktop/token-usage",
+    "test:native": "npm test --prefix desktop/token-usage-tauri",
+    "test:collector": "node scripts/verify-token-usage-collector.mjs",
+    "check:sources": "node scripts/sync-token-usage-sources.mjs --check",
+    "build": "npm run build --prefix desktop/token-usage-tauri"
+  },
+  "devDependencies": {
+    "sharp": "0.34.5"
+  }
+}

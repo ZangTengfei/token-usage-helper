@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; connect-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <title>AI Club Token 用量助手</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <img src="../vendor/icon.png" alt="" width="44" height="44" />
+          <div><strong>常州 AI Club</strong><span>用量助手</span></div>
+        </div>
+        <nav class="tabs" aria-label="主导航">
+          <button data-view="overview" aria-current="page">
+            <span class="nav-icon tone-green">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                aria-hidden="true"
+              >
+                <path d="M4 19V12h3v7M10 19V5h3v14M16 19V9h3v10" /></svg></span
+            >总览</button
+          ><button data-view="today" title="小时趋势">
+            <span class="nav-icon tone-blue" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="9.5" />
+                <path d="M12 6.5V12l4 2.5" />
+              </svg>
+            </span>小时趋势</button
+          ><button data-view="tools">
+            <span class="nav-icon tone-blue">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                aria-hidden="true"
+              >
+                <path
+                  d="m12 3 9 5-9 5-9-5 9-5Zm-9 5v9l9 5 9-5V8M12 13v9"
+                /></svg></span
+            >工具与模型</button
+          ><button data-view="sources">
+            <span class="nav-icon tone-orange">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                aria-hidden="true"
+              >
+                <ellipse cx="12" cy="5" rx="8" ry="3" />
+                <path
+                  d="M4 5v7c0 4 16 4 16 0V5M4 12v7c0 4 16 4 16 0v-7"
+                /></svg></span
+            >统计来源</button
+          ><button data-view="leaderboard">
+            <span class="nav-icon tone-purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M9 20V4h6v16M3 20V10h6M15 8h6v12M2 20h20" /></svg></span>
+            社区排行榜
+          </button><button data-view="settings">
+            <span class="nav-icon tone-neutral">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="3" />
+                <path
+                  d="m9 3-1 3-3 1-2 4 2 2v4l4 2 3-1 3 1 4-2v-4l2-2-2-4-3-1-1-3H9Z"
+                /></svg></span
+            >设置<span id="update-dot" aria-label="有未读版本更新" role="img" hidden></span>
+          </button>
+        </nav>
+        <button class="sidebar-account" data-view="settings">
+          <span
+            id="sidebar-initial"
+            class="avatar small-avatar"
+            aria-hidden="true"
+            >本</span
+          ><span class="connection-dot" aria-hidden="true"></span
+          ><span
+            ><b id="sidebar-name">本机记录</b
+            ><small id="sidebar-status">尚未连接社区</small></span
+          ><span aria-hidden="true">›</span>
+        </button>
+      </aside>
+      <div class="workspace">
+        <header class="app-header">
+          <h1 id="page-title">总览</h1>
+          <div class="header-actions">
+            <span id="status" class="status">尚未读取</span
+            ><button id="sync" class="primary icon-action">
+              <span data-icon="refresh" aria-hidden="true"></span
+              ><span id="sync-label">读取并同步</span>
+            </button>
+          </div>
+        </header>
+        <div id="connection" class="notice" hidden>
+          <div>
+            <b>在浏览器中确认连接</b>
+            <p>
+              核对连接码 <strong id="code" class="code"></strong>，确认后 App
+              会自动同步。
+            </p>
+          </div>
+          <div class="actions">
+            <button id="reopen">重新打开登录页</button
+            ><button id="cancel">取消</button>
+          </div>
+        </div>
+        <div id="login-banner" class="notice">
+          <div>
+            <b>你的记录，先留在自己的电脑上</b>
+            <p>直接读取本机用量；确认连接社区后同步并参与排行。</p>
+          </div>
+          <button id="login" class="primary">登录社区 ↗</button>
+        </div>
+        <p id="message" role="status" class="message" hidden></p>
+        <div id="credential-notice" class="notice" hidden>
+          <div><b>社区连接等待授权</b><p>本机记录可照常查看，恢复连接后继续同步。</p></div>
+          <button id="restore-connection" class="primary">恢复社区连接</button>
+        </div>
+        <section id="data-controls" class="filter-row" aria-label="用量筛选">
+          <div
+            ><span class="sr-only">工具</span
+            ><select id="client" aria-label="工具">
+              <option value="all">全部工具</option>
+            </select></div
+          ><div
+            ><span class="sr-only">查看范围</span
+            ><select id="range" aria-label="查看范围">
+              <option value="90">近 90 天</option>
+              <option value="30">近 30 天</option>
+              <option value="7">近 7 天</option>
+            </select></div
+          ><label class="check"
+            ><input
+              id="cache"
+              type="checkbox"
+              class="switch"
+              role="switch"
+              checked
+            />总量包含缓存</label
+          >
+        </section>
+        <section id="overview-view" class="view">
+          <div class="metrics">
+            <article class="today-metric">
+              <span
+                class="metric-icon tone-green"
+                data-icon="chart"
+                aria-hidden="true"
+              ></span>
+              <div>
+                <span>今日 Token</span><strong id="today">—</strong
+                ><small id="today-note">等待本机读取</small>
+              </div>
+            </article>
+            <div class="secondary-metrics">
+              <article>
+                <span>近 7 天</span><strong id="week">—</strong
+                ><small id="week-note"></small>
+              </article>
+              <article>
+                <span>近 30 天</span><strong id="month">—</strong
+                ><small id="month-note"></small>
+              </article>
+            </div>
+          </div>
+          <section class="panel">
+            <div class="section-heading">
+              <div>
+                <h2>每日用量</h2>
+                <p id="heat-subtitle">最近 90 天 · 北京时间</p>
+              </div>
+              <span id="active-days" class="pill"></span>
+            </div>
+            <div id="legacy" class="empty" hidden>
+              旧版只保存了汇总数字。点击「读取本机记录」，生成每日热力图。
+            </div>
+            <div class="heat-layout">
+              <div class="calendar-section">
+                <div id="months" class="months" aria-hidden="true"></div>
+                <div class="calendar-row">
+                  <div class="weekdays" aria-hidden="true">
+                    <span>一</span><span>二</span><span>三</span><span>四</span
+                    ><span>五</span><span>六</span><span>日</span>
+                  </div>
+                  <div
+                    id="heatmap"
+                    class="heatmap"
+                    role="group"
+                    aria-label="每日 Token 热力图；使用方向键选择日期"
+                  ></div>
+                </div>
+                <div class="legend">
+                  <span>少</span><i class="level-1"></i><i class="level-2"></i
+                  ><i class="level-3"></i><i class="level-4"></i
+                  ><i class="level-5"></i><span>多</span><i class="zero"></i
+                  ><span>记录为 0</span><i class="unknown"></i
+                  ><span>未发现记录</span>
+                </div>
+                <p class="hint">
+                  颜色按当前范围相对用量分档；点击或用方向键选日。
+                </p>
+              </div>
+              <aside
+                id="day-detail"
+                class="day-detail"
+                aria-live="polite"
+              ></aside>
+            </div>
+          </section>
+          <section class="panel">
+            <div class="section-heading"><h2>每日 Token 用量</h2><div class="board-periods" role="group" aria-label="堆叠维度"><button data-stack="model" aria-pressed="true">模型</button><button data-stack="client" aria-pressed="false">客户端</button></div></div>
+            <div id="daily-stack" class="trend-plot"></div><div id="daily-stack-legend" class="trend-legend"></div>
+          </section>
+          <div class="overview-bottom">
+            <section class="panel">
+              <div class="section-heading">
+                <h2>工具分布</h2>
+                <button data-view="tools" class="text-button">
+                  查看明细 →
+                </button>
+              </div>
+              <div id="tool-summary"></div>
+            </section>
+            <section class="panel">
+              <h2>原始 Token 构成</h2>
+              <div
+                id="composition"
+                class="composition"
+                role="img"
+                aria-label="Token 构成"
+              ></div>
+              <div id="composition-legend" class="composition-legend"></div>
+              <div class="cache-stat">
+                <span>缓存占比</span><strong id="cache-ratio">—</strong>
+              </div>
+              <p class="hint">Token 总量不等同于实际付费或新生成的内容。</p>
+              <details class="counting-help">
+                <summary>统计口径</summary>
+                <p id="counting-note" class="hint"></p>
+              </details>
+            </section>
+          </div>
+        </section>
+        <section id="today-view" class="view" hidden>
+          <section class="panel"><div class="section-heading"><h2>近 24 小时趋势</h2><button id="refresh-hourly">刷新</button></div>
+            <p id="hourly-status" class="hint" role="status"></p><div id="hourly-plot" class="trend-plot"></div>
+            <div class="trend-legend"><span><i class="rate-dot"></i>缓存命中率 · 左轴</span><span><i class="token-dot"></i>总 Token · 右轴</span></div>
+          </section>
+        </section>
+        <section id="tools-view" class="view" hidden>
+          <div class="report-summary">
+            <p id="tools-subtitle" class="muted"></p>
+            <strong id="range-total" class="range-total"></strong>
+          </div>
+          <div class="two-columns tools-panels">
+            <section class="panel">
+              <h2>工具分布</h2>
+              <div id="tools"></div>
+            </section>
+            <section class="panel">
+              <h2>Token 分项</h2>
+              <div
+                id="tools-composition"
+                class="composition"
+                role="img"
+                aria-label="Token 分项"
+              ></div>
+              <div id="buckets"></div>
+            </section>
+          </div>
+          <section class="panel model-panel">
+            <div class="section-heading">
+              <h2>模型用量</h2>
+              <span class="muted">按用量从高到低</span>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">模型</th>
+                  <th scope="col">Token</th>
+                  <th scope="col">占比</th>
+                </tr>
+              </thead>
+              <tbody id="models"></tbody>
+            </table>
+          </section>
+        </section>
+        <section id="sources-view" class="view" hidden>
+          <div class="sources-intro">
+            <p>按需开启统计工具</p>
+            <button type="button" id="cursor-import" hidden>导入 Cursor CSV</button>
+            <input type="file" id="cursor-file" accept=".csv,text/csv" hidden />
+            <span id="sources-count"></span>
+          </div>
+          <p id="sources-pending" class="message" hidden>
+            来源设置已变更，当前图表仍是上次读取的结果。
+          </p>
+          <div id="sources-list"></div>
+          <p class="hint source-notice">
+            <span data-icon="info" aria-hidden="true"></span
+            >关闭来源后，下次成功同步会移除对应统计，原始日志保留。
+          </p>
+          <details class="source-help">
+            <summary>读取说明</summary>
+            <p class="hint">
+              无需提供平台账号或 API
+              Key。开启后点击「读取本机记录」或「读取并同步」。仅统计近 90
+              天可解析的记录，不代表完整账单。读取异常时保留上次统计；未发现记录可能是工具未使用、日志缺失或格式暂不支持。
+              ZCode 不使用字数估算；Qoder 仅记录 Credits 的历史调用不计入 Token，也无法补算。
+            </p>
+          </details>
+        </section>
+        <section id="leaderboard-view" class="view" hidden>
+          <div class="board-controls">
+            <div class="board-periods" role="group" aria-label="榜单周期">
+              <button data-period="today" aria-pressed="false">今日</button>
+              <button data-period="7d" aria-pressed="true">近 7 天</button>
+              <button data-period="30d" aria-pressed="false">近 30 天</button>
+              <button data-period="all" aria-pressed="false">最近 90 天</button>
+            </div>
+            <div class="actions"><button id="board-refresh">刷新榜单</button><button id="board-website" class="text-button">官网榜单 ↗</button></div>
+          </div>
+          <p class="hint">社区同步用量 · 含缓存 Token · 北京时间</p>
+          <p id="board-status" class="hint" role="status" aria-live="polite"></p>
+          <section class="panel board-panel" aria-label="社区 Token 排行榜" aria-busy="false">
+            <table class="board-table">
+              <thead><tr><th scope="col">排名</th><th scope="col">成员</th><th scope="col">Token</th><th scope="col">最近同步</th></tr></thead>
+              <tbody id="board-rows"></tbody>
+            </table>
+            <p id="board-empty" class="empty" hidden>本周期还没有公开的用量记录。</p>
+          </section>
+        </section>
+        <section id="settings-view" class="view" hidden>
+          <section class="panel account-panel">
+            <h2>社区账号</h2>
+            <div class="setting-row account-row">
+              <span
+                id="account-initial"
+                class="avatar account-avatar"
+                aria-hidden="true"
+                >本</span
+              >
+              <div class="setting-copy">
+                <b id="nickname">尚未登录</b>
+                <p id="account-state">尚未连接社区</p>
+                <p>确认连接后，网站用户名、头像和用量将展示在社区排行。</p>
+              </div>
+              <button id="account">查看社区排行 ↗</button>
+            </div>
+            <div class="actions">
+              <button id="settings-login" class="primary">登录社区</button
+              ><button id="settings-reconnect" class="text-button" hidden>重新连接</button
+              ><button id="disconnect" class="danger text-button" hidden>
+                退出账号并停止上传
+              </button>
+            </div>
+          </section>
+          <section class="panel">
+            <h2>读取与同步</h2>
+            <div class="setting-row">
+              <span
+                class="setting-icon tone-green"
+                data-icon="refresh"
+                aria-hidden="true"
+              ></span>
+              <div class="setting-copy">
+                <b>每小时自动同步</b>
+                <p>连接社区后生效；休眠期间暂停，唤醒后继续。</p>
+              </div>
+              <button
+                id="pause"
+                class="toggle-button"
+                type="button"
+                role="switch"
+                aria-label="每小时自动同步"
+                aria-checked="false"
+                disabled
+              ></button>
+            </div>
+            <div class="setting-row">
+              <span
+                class="setting-icon tone-blue"
+                data-icon="folder"
+                aria-hidden="true"
+              ></span>
+              <div class="setting-copy">
+                <b>仅更新本机记录</b>
+                <p>只更新本机统计，不上传社区。</p>
+              </div>
+              <button id="collect">读取本机记录</button>
+            </div>
+            <label class="setting-row startup-label"
+              ><span
+                class="setting-icon tone-purple"
+                data-icon="power"
+                aria-hidden="true"
+              ></span>
+              <div class="setting-copy">
+                <b>开机自动启动</b>
+                <p>关闭窗口后继续在系统托盘或菜单栏运行。</p>
+              </div>
+              <input
+                id="startup"
+                type="checkbox"
+                class="switch"
+                role="switch"
+                aria-label="开机自动启动"
+            /></label>
+            <div class="sync-times">
+              <div>
+                <span>最近本机读取</span
+                ><strong id="last-read">尚未读取</strong>
+              </div>
+              <div>
+                <span>最近成功上传</span
+                ><strong id="last-upload">尚未上传</strong>
+              </div>
+            </div>
+          </section>
+          <section id="app-update" class="panel" hidden>
+            <h2>应用更新</h2>
+            <div class="setting-row">
+              <div class="setting-copy">
+                <p id="update-status" role="status">启动后自动检查更新</p>
+                <progress id="update-progress" aria-label="更新下载进度" hidden></progress>
+              </div>
+              <button id="update-check">检查更新</button>
+              <button id="update-install" class="primary" hidden>更新并重启</button>
+            </div>
+          </section>
+          <details class="panel advanced">
+            <summary>
+              <span
+                class="setting-icon tone-neutral"
+                data-icon="settings"
+                aria-hidden="true"
+              ></span
+              ><span
+                ><b>高级设置与诊断</b
+                ><small>每个账号最多绑定 3 台电脑，合计最近 90 天的用量。</small></span
+              ><span class="disclosure-arrow" aria-hidden="true">›</span>
+            </summary>
+            <label for="site">社区地址</label>
+            <div class="server-row">
+              <input id="site" type="url" spellcheck="false" /><button
+                id="save-site"
+              >
+                保存地址
+              </button>
+            </div>
+            <p class="hint">切换社区前需退出账号。</p>
+            <p id="diagnostics" class="hint"></p>
+          </details>
+          <button id="quit" class="quit-button">退出 App</button>
+        </section>
+        <footer>
+          <span id="sync-footer">本机统计与社区同步分别记录</span
+          ><button id="update-notice" class="text-button" hidden></button><span id="version"></span>
+        </footer>
+      </div>
+    </main>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

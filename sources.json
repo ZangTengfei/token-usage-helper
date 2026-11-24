@@ -1,0 +1,140 @@
+[
+  {
+    "id": "codex",
+    "label": "Codex",
+    "adapter": "tokscale",
+    "defaultEnabled": true
+  },
+  {
+    "id": "claude",
+    "label": "Claude Code",
+    "adapter": "tokscale",
+    "defaultEnabled": true
+  },
+  {
+    "id": "opencode",
+    "label": "OpenCode",
+    "adapter": "tokscale",
+    "defaultEnabled": true
+  },
+  {
+    "id": "gemini",
+    "label": "Gemini CLI",
+    "adapter": "tokscale",
+    "defaultEnabled": false
+  },
+  {
+    "id": "kimi",
+    "label": "Kimi CLI",
+    "adapter": "tokscale",
+    "defaultEnabled": false
+  },
+  {
+    "id": "qwen",
+    "label": "Qwen CLI",
+    "adapter": "tokscale",
+    "defaultEnabled": false
+  },
+  {
+    "id": "openclaw",
+    "label": "OpenClaw",
+    "adapter": "tokscale",
+    "defaultEnabled": false
+  },
+  {
+    "id": "dsh",
+    "label": "DeepSeek Harness",
+    "adapter": "tokscale",
+    "defaultEnabled": false
+  },
+  {
+    "id": "cline",
+    "label": "Cline",
+    "adapter": "tokscale",
+    "defaultEnabled": false
+  },
+  {
+    "id": "roocode",
+    "label": "Roo Code",
+    "adapter": "tokscale",
+    "defaultEnabled": false
+  },
+  {
+    "id": "kilocode",
+    "label": "Kilo",
+    "adapter": "tokscale",
+    "defaultEnabled": false
+  },
+  {
+    "id": "copilot",
+    "label": "GitHub Copilot CLI",
+    "adapter": "tokscale",
+    "defaultEnabled": false
+  },
+  {
+    "id": "hermes",
+    "label": "Hermes Agent",
+    "adapter": "tokscale",
+    "defaultEnabled": false
+  },
+  {
+    "id": "pi",
+    "label": "Pi",
+    "adapter": "tokscale",
+    "defaultEnabled": false
+  },
+  {
+    "id": "goose",
+    "label": "Goose",
+    "adapter": "tokscale",
+    "defaultEnabled": false
+  },
+  {
+    "id": "droid",
+    "label": "Droid",
+    "adapter": "tokscale",
+    "defaultEnabled": false
+  },
+  {
+    "id": "workbuddy",
+    "label": "WorkBuddy",
+    "adapter": "tokscale",
+    "defaultEnabled": false
+  },
+  {
+    "id": "zcode",
+    "label": "ZCode",
+    "adapter": "local-v1",
+    "defaultEnabled": false
+  },
+  {
+    "id": "teleagent",
+    "label": "TeleAgent",
+    "adapter": "local-v1",
+    "defaultEnabled": false
+  },
+  {
+    "id": "qoder",
+    "label": "Qoder",
+    "adapter": "local-v1",
+    "defaultEnabled": false
+  },
+  {
+    "id": "kiro",
+    "label": "Kiro CLI",
+    "adapter": "local-v1",
+    "defaultEnabled": false
+  },
+  {
+    "id": "antigravity",
+    "label": "Antigravity",
+    "adapter": "tokscale",
+    "defaultEnabled": false
+  },
+  {
+    "id": "cursor",
+    "label": "Cursor",
+    "adapter": "csv",
+    "defaultEnabled": false
+  }
+]
