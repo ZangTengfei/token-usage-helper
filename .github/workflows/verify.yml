@@ -52,7 +52,7 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
         with:
-          name: pr-package-${{ matrix.os }}
+          name: pr-package-${{ matrix.os }}-attempt-${{ github.run_attempt }}
           path: output/pr-packages/
           if-no-files-found: error
           retention-days: 7
