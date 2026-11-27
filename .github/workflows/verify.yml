@@ -15,6 +15,9 @@ jobs:
         os: [macos-15, windows-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 35
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -31,3 +34,43 @@ jobs:
       - run: npm run test:native
       - run: npm run test:collector
       - run: npm test
+
+      - name: 构建测试安装包
+        id: package
+        if: github.event_name == 'pull_request'
+        run: |
+          npm run build
+          mkdir -p output/pr-packages
+          bundle=desktop/token-usage-tauri/src-tauri/target/release/bundle
+          if [ "$RUNNER_OS" = macOS ]; then
+            ditto -c -k --sequesterRsrc --keepParent "$bundle/macos/AI Club Token 用量助手.app" output/pr-packages/Token-Usage-Helper-macos-arm64.zip
+          else
+            cp "$bundle"/nsis/*.exe output/pr-packages/
+          fi
+      - name: 保留测试安装包
+        id: artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-package-${{ matrix.os }}-attempt-${{ github.run_attempt }}
+          path: output/pr-packages/
+          if-no-files-found: error
+          retention-days: 7
+      - name: 记录 PR 构建与上传状态
+        if: always() && github.event_name == 'pull_request'
+        env:
+          PACKAGE_STATUS: ${{ steps.package.outcome }}
+          ARTIFACT_URL: ${{ steps.artifact.outputs.artifact-url }}
+        run: |
+          {
+            echo '### PR 测试包'
+            case "$PACKAGE_STATUS" in
+              success) echo '- 构建打包已完成。' ;;
+              failure) echo '- 构建打包失败，请展开上方日志。' ;;
+              *) echo '- 构建打包未运行，请查看前面的检查。' ;;
+            esac
+            if [ -n "$ARTIFACT_URL" ]; then
+              printf '%s\n' "- [下载本次测试安装包]($ARTIFACT_URL)"
+            fi
+            echo '- COS 上传和正式发布未触发，合并后由维护者批准发布。'
+          } >> "$GITHUB_STEP_SUMMARY"

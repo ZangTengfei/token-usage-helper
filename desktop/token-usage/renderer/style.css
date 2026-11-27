@@ -1809,5 +1809,3 @@ body.tray-body {
 .trend-legend { display: flex; flex-wrap: wrap; gap: 6px 15px; font-size: 12px; color: var(--muted); }
 .trend-legend span { display: inline-flex; align-items: center; gap: 5px; overflow-wrap: anywhere; }
 .trend-legend i { width: 10px; height: 7px; border-radius: 2px; flex: none; }
-.rate-dot { background: #2876c2; }
-.token-dot { background: #c57a18; }

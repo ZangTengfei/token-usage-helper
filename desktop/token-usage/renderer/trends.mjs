@@ -14,12 +14,6 @@ const short = new Intl.NumberFormat("zh-CN", {
   notation: "compact",
   maximumFractionDigits: 1,
 });
-const hourFormat = new Intl.DateTimeFormat("zh-CN", {
-  timeZone: "Asia/Shanghai",
-  hour: "2-digit",
-  minute: "2-digit",
-  hourCycle: "h23",
-});
 const left = 63,
   right = 740,
   top = 20,
@@ -40,7 +34,7 @@ function chart(host, name) {
   host.replaceChildren(root);
   return root;
 }
-function axis(root, max, dual = false) {
+function axis(root, max) {
   for (let i = 0; i <= 4; i++) {
     const y = bottom - (i * (bottom - top)) / 4;
     root.append(
@@ -57,11 +51,9 @@ function axis(root, max, dual = false) {
       root,
       left - 8,
       y + 4,
-      dual ? i * 25 + "%" : short.format((max * i) / 4),
+      short.format((max * i) / 4),
       "end",
     );
-    if (dual)
-      label(root, right + 8, y + 4, short.format((max * i) / 4), "start");
   }
 }
 function label(root, x, y, text, anchor = "middle") {
@@ -164,71 +156,5 @@ export function dailyChart(report, dimension, selectDay) {
         report.days.length - 1 - i >= Math.ceil(report.days.length / 12))
     )
       label(root, x, bottom + 22, day.date.slice(5));
-  });
-}
-export function hourlyChart(hours) {
-  const host = document.getElementById("hourly-plot");
-  if (!hours.some((h) => h.total > 0)) {
-    host.textContent = "近 24 小时暂无已记录的用量。";
-    return;
-  }
-  const root = chart(host, "近 24 小时 Token 用量和缓存命中率"),
-    max = Math.max(1, ...hours.map((h) => h.total));
-  axis(root, max, true);
-  const x = (i) => left + (i * (right - left)) / 23;
-  for (const [field, color, scale] of [
-    ["total", "#c57a18", max],
-    ["rate", "#2876c2", 1],
-  ]) {
-    let path = "",
-      last = false;
-    hours.forEach((h, i) => {
-      if (h[field] === null) {
-        last = false;
-        return;
-      }
-      const y = bottom - ((bottom - top) * h[field]) / scale;
-      path += (last ? " L" : " M") + x(i) + " " + y;
-      last = true;
-    });
-    root.append(
-      svg("path", {
-        d: path.trim(),
-        stroke: color,
-        fill: "none",
-        "stroke-width": 2.5,
-      }),
-    );
-    hours.forEach((h, i) => {
-      if (h[field] === null) return;
-      const dot = svg("circle", {
-        cx: x(i),
-        cy: bottom - ((bottom - top) * h[field]) / scale,
-        r: 3,
-        fill: color,
-      });
-      root.append(dot);
-    });
-  }
-  hours.forEach((h, i) => {
-    const time = hourFormat.format(h.time);
-    if (i % 4 === 0 || i === 23) label(root, x(i), bottom + 22, time);
-    const hit = svg("rect", {
-      x: x(i) - 10,
-      y: top,
-      width: 20,
-      height: bottom - top,
-      fill: "transparent",
-      tabindex: 0,
-    });
-    pointInfo(
-      hit,
-      time +
-        " · " +
-        h.total.toLocaleString() +
-        " Token · 缓存命中率 " +
-        (h.rate === null ? "无数据" : (100 * h.rate).toFixed(1) + "%"),
-    );
-    root.append(hit);
   });
 }

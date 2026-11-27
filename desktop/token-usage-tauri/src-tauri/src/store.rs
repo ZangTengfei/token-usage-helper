@@ -310,26 +310,6 @@ impl Store {
         }
         Ok(value)
     }
-    pub async fn hourly(&self) -> Result<Value, String> {
-        let sources = self
-            .inner
-            .lock()
-            .unwrap()
-            .settings
-            .sources
-            .iter()
-            .filter(|(k, v)| **v && matches!(k.as_str(), "claude" | "codex"))
-            .map(|(k, _)| k.clone())
-            .collect();
-        let home = self.fixture_home.as_ref().unwrap_or(&self.home).clone();
-        let isolated = self.fixture_home.is_some();
-        tokio::task::spawn_blocking(move || {
-            tokio::runtime::Handle::current()
-                .block_on(crate::hourly::report(home, isolated, sources))
-        })
-        .await
-        .map_err(|_| "小时记录读取中断。".to_owned())?
-    }
     pub async fn leaderboard(&self, period: Value) -> Result<Value, String> {
         let period = period
             .as_str()

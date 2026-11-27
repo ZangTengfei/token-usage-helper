@@ -77,18 +77,7 @@ export async function verify({ debugPort, output, report }) {
     await waitState((s) => s.sources.claude === false);
     assert.equal((await state()).sources.claude, false);
     await page.screenshot({ path: join(output, "windows-sources.png"), fullPage: true });
-    await page.getByRole("button", { name: "小时趋势", exact: true }).click();
-    await page.locator("#hourly-plot svg").waitFor();
-    assert.equal(await page.locator('#hourly-plot svg rect[tabindex="0"]').count(), 24);
-    assert.match(await page.locator("#hourly-status").innerText(), /北京时间/);
-    const hourly = await page.evaluate(() => window.clubUsage.action("hourly"));
-    assert.equal(hourly.ok, true);
-    assert.deepEqual(hourly.sources, ["codex"]);
-    assert.equal(hourly.hours.length, 24);
-    assert.equal(hourly.hours.reduce((sum, row) => sum + row.total, 0), 130);
-    assert.equal(hourly.hours.find((row) => row.total > 0).rate, 0.2);
-    assert.ok(!JSON.stringify(hourly).includes("PRIVATE"));
-    await page.screenshot({ path: join(output, "windows-hourly.png"), fullPage: true });
+    assert.equal(await page.locator('nav [data-view="today"]').count(), 0);
     await page.locator('nav [data-view="leaderboard"]').click();
     for (const period of ["today", "7d", "30d", "all"]) {
       await page.locator(`[data-period="${period}"]`).click();
@@ -109,7 +98,7 @@ export async function verify({ debugPort, output, report }) {
     assert.equal((await tray.evaluate(() => window.clubUsage.action("open", "tools"))).ok, true);
     await page.waitForFunction(() => !document.querySelector("#tools-view").hidden);
     assert.deepEqual(errors, []);
-    console.log("PASS Windows WebView2: IPC, 7/30/90-day heatmaps and daily stacks, model/client dimensions, 24-hour native totals/cache rate, 22 sources, public boards, native collector, tray navigation; no community uploads.");
+    console.log("PASS Windows WebView2: IPC, 7/30/90-day heatmaps and daily stacks, model/client dimensions, 22 sources, public boards, native collector, tray navigation; no community uploads.");
   } finally {
     await browser?.close();
   }

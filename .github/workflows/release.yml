@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: '版本号，须与 main 上的客户端版本一致，例如 0.5.20'
+        description: '版本号，须与 main 上的客户端版本一致，例如 0.5.21'
         required: true
         type: string
       notes:
@@ -68,30 +68,57 @@ jobs:
         run: |
           mkdir -p output/desktop-releases
           node -e 'require("fs").writeFileSync("output/desktop-releases/notes.txt", process.env.RELEASE_NOTES)'
-      - name: 构建并上传后台
+      - name: 构建并签名安装包
+        id: package
         env:
-          TENCENT_COS_SECRET_ID: ${{ secrets.TENCENT_COS_SECRET_ID }}
-          TENCENT_COS_SECRET_KEY: ${{ secrets.TENCENT_COS_SECRET_KEY }}
-          TENCENT_COS_BUCKET: ${{ vars.TENCENT_COS_BUCKET }}
-          TENCENT_COS_REGION: ${{ vars.TENCENT_COS_REGION }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           RELEASE_PLATFORM: ${{ matrix.platform }}
           RELEASE_ARCH: ${{ matrix.arch }}
           RELEASE_VERSION: ${{ inputs.version }}
-          RELEASE_PUBLISH: ${{ inputs.publish }}
+        run: npm run desktop:release -- --version "$RELEASE_VERSION" --platform "$RELEASE_PLATFORM" --arch "$RELEASE_ARCH" --notes-file output/desktop-releases/notes.txt
+      - name: 保留签名工件
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-release-${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
+            output/desktop-releases/*.zip
+            output/desktop-releases/*.exe
+            output/desktop-releases/*.sig
+            output/desktop-releases/*.tar.gz
+            output/desktop-releases/*-updater.json
+            output/desktop-releases/*-result.json
+            output/desktop-releases/notes.txt
+            desktop/token-usage-tauri/package.json
+            desktop/token-usage-tauri/package-lock.json
+            desktop/token-usage-tauri/src-tauri/Cargo.toml
+            desktop/token-usage-tauri/src-tauri/Cargo.lock
+            desktop/token-usage-tauri/src-tauri/tauri.conf.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: 上传私有 COS 并校验
+        env:
+          RELEASE_PLATFORM: ${{ matrix.platform }}
+          RELEASE_ARCH: ${{ matrix.arch }}
+          RELEASE_VERSION: ${{ inputs.version }}
           DESKTOP_RELEASE_SITE: https://changzhouai.club
           NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
           DESKTOP_RELEASE_EMAIL: ${{ secrets.DESKTOP_RELEASE_EMAIL }}
           DESKTOP_RELEASE_PASSWORD: ${{ secrets.DESKTOP_RELEASE_PASSWORD }}
-        run: |
-          if [ "$RELEASE_PUBLISH" = true ]; then
-            node -e 'for (const key of ["TENCENT_COS_SECRET_ID", "TENCENT_COS_SECRET_KEY", "TENCENT_COS_BUCKET", "TENCENT_COS_REGION"]) if (!process.env[key]) throw Error(`缺少 ${key}`)'
-          fi
-          mode=--upload
-          if [ "$RELEASE_PUBLISH" = true ]; then mode=--publish; fi
-          npm run desktop:release -- --version "$RELEASE_VERSION" --platform "$RELEASE_PLATFORM" --arch "$RELEASE_ARCH" "$mode" --notes-file output/desktop-releases/notes.txt
+        run: npm run desktop:release -- --reuse-build --version "$RELEASE_VERSION" --platform "$RELEASE_PLATFORM" --arch "$RELEASE_ARCH" --upload --notes-file output/desktop-releases/notes.txt
+      - name: 发布官网下载
+        if: inputs.publish
+        env:
+          RELEASE_PLATFORM: ${{ matrix.platform }}
+          RELEASE_ARCH: ${{ matrix.arch }}
+          RELEASE_VERSION: ${{ inputs.version }}
+          DESKTOP_RELEASE_SITE: https://changzhouai.club
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          DESKTOP_RELEASE_EMAIL: ${{ secrets.DESKTOP_RELEASE_EMAIL }}
+          DESKTOP_RELEASE_PASSWORD: ${{ secrets.DESKTOP_RELEASE_PASSWORD }}
+        run: npm run desktop:release -- --reuse-build --version "$RELEASE_VERSION" --platform "$RELEASE_PLATFORM" --arch "$RELEASE_ARCH" --publish --notes-file output/desktop-releases/notes.txt
       - name: 发布应用内更新
         if: inputs.publish
         env:
@@ -110,21 +137,30 @@ jobs:
             if (!result.updater?.signatureVerified) throw Error("缺少已验证更新包");
             cp.execFileSync(process.execPath, ["scripts/publish-token-usage-updater.mjs", "--file", result.updater.file, "--version", version, "--platform", platform, "--notes-file", "output/desktop-releases/notes.txt", "--apply"], { stdio: "inherit" });
           '
-      - name: 保留安装包与版本清单
-        if: always()
+      - name: 保留发布结果
+        if: always() && steps.package.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
-          name: desktop-release-${{ matrix.platform }}-${{ matrix.arch }}
-          path: |
-            output/desktop-releases/*.zip
-            output/desktop-releases/*.exe
-            output/desktop-releases/*.sig
-            output/desktop-releases/*.tar.gz
-            output/desktop-releases/*-updater.json
-            output/desktop-releases/*-result.json
-            desktop/token-usage-tauri/package.json
-            desktop/token-usage-tauri/package-lock.json
-            desktop/token-usage-tauri/src-tauri/Cargo.toml
-            desktop/token-usage-tauri/src-tauri/Cargo.lock
-            desktop/token-usage-tauri/src-tauri/tauri.conf.json
+          name: desktop-release-${{ matrix.platform }}-${{ matrix.arch }}-result
+          path: output/desktop-releases/*-result.json
           retention-days: 14
+  report:
+    name: 回写 PR 发布状态
+    needs: release
+    if: always() && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node scripts/desktop-release/report-pr.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.version }}

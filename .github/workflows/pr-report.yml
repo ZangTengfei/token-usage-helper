@@ -1,0 +1,29 @@
+name: 将测试结果写入 PR
+on:
+  workflow_run:
+    workflows: [验证 Token 用量助手]
+    types: [completed]
+
+permissions: {}
+
+jobs:
+  report:
+    if: github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: pr-ci-report-${{ github.event.workflow_run.id }}-${{ github.event.workflow_run.run_attempt }}
+      cancel-in-progress: false
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node scripts/desktop-release/report-pr.mjs --ci
+        env:
+          GH_TOKEN: ${{ github.token }}
