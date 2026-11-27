@@ -18,7 +18,7 @@ npm test
 npm run build
 ```
 
-构建结果在 `desktop/token-usage-tauri/src-tauri/target/release/bundle/`。本地构建生成测试安装包，正式下载和应用内更新由常州 AI Club 发布流程签名。
+构建结果在 `desktop/token-usage-tauri/src-tauri/target/release/bundle/`。本地构建生成不含应用内更新签名的测试安装包，正式下载和应用内更新由维护者通过发布流程签名。
 
 ## 参与维护
 
@@ -27,6 +27,23 @@ npm run build
 - 桌面宿主和原生采集位于 `desktop/token-usage-tauri`。
 - 共享界面和 JavaScript 测试位于 `desktop/token-usage`。
 - 命令行采集器位于 `public/tools`。
-- 新增来源时编辑 `sources.json`，再运行 `node scripts/sync-token-usage-sources.mjs`。社区同步的白名单和数据库规则由服务端维护者配套更新。
+- 新增来源时编辑 `sources.json`，再运行 `node scripts/sync-token-usage-sources.mjs`。社区同步的白名单和数据库规则由服务端维护者配套更新，服务端上线后才发布客户端。
+
+合并和发版由维护者负责，贡献者不需要任何发布凭证。
 
 提交采集问题时，请使用去标识的最小样本，例如来源、版本、字段名和 Token 分项。真实会话、提示词、账号及凭证留在本机。
+
+## 发布（维护者）
+
+正式版本只从 `main` 发布，签名密钥、对象存储和后台账号保存在 GitHub 环境 `desktop-release`，运行前需要维护者批准。
+
+1. 提交并合并版本号改动：`npm run version:set -- 0.5.20`，它会同步 `desktop/token-usage-tauri` 的五份版本清单。
+2. 在 Actions 运行「发布 Token 用量助手」，版本号与 `main` 一致，打开「立即发布」后批准环境。流程会构建、签名、上传后台、切换下载入口并推送应用内更新。
+3. 只想演练时关闭「立即发布」，后台只保存草稿，不推应用内更新。重新构建的安装包字节不同，同版本不会被覆盖：核对后在后台发布该草稿，再下载这次运行的 Artifacts，用其中的更新包执行 `npm run updater:publish -- --file <更新包> --version 0.5.20 --platform macos --notes-file notes.txt --apply`；否则改用新版本号。
+
+本地也可运行 `npm run desktop:release -- --version 0.5.20 [--upload | --publish] --notes-file notes.txt`，凭证从 `.env.local` 读取。应用内更新地址和签名公钥写在 `tauri.conf.json`，更换会导致已安装的客户端无法自动更新。
+
+### 与社区网站的配合
+
+- 新增统计来源：先在网站仓库更新来源白名单与数据库迁移并上线，再在本仓库改 `sources.json` 并发版。两边的 `sources.json` 应保持一致。
+- `public/tools/club-usage.mjs` 以本仓库为准，改动发版后同步一份到网站仓库的 `public/tools/`。

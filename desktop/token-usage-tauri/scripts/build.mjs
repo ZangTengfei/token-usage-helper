@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
+import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { delimiter, dirname, join, resolve } from "node:path";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -22,10 +23,18 @@ if (process.argv.includes("--test"))
   run(cargo, ["test", "--locked"], root + "/src-tauri");
 else {
   const bundle = process.platform === "win32" ? "nsis" : "app";
-  // Contributor packages build without the production updater signing key.
-  const config = JSON.stringify({ bundle: { createUpdaterArtifacts: false } });
-  run(process.execPath, [
-    root + "/node_modules/@tauri-apps/cli/tauri.js",
-    "build", "--bundles", bundle, "--config", config, "--", "--locked",
-  ]);
+  const args = ["build", "--bundles", bundle];
+  if (process.argv.includes("--release")) {
+    // Official releases must produce updater artifacts that clients can verify.
+    const localKey = join(homedir(), ".config/changzhouai-club/token-usage-updater.key");
+    if (!env.TAURI_SIGNING_PRIVATE_KEY && existsSync(localKey)) {
+      env.TAURI_SIGNING_PRIVATE_KEY = localKey;
+      env.TAURI_SIGNING_PRIVATE_KEY_PASSWORD ??= "";
+    }
+    if (!env.TAURI_SIGNING_PRIVATE_KEY) throw new Error("正式构建需要 TAURI_SIGNING_PRIVATE_KEY；禁止发布无法验签的包。");
+  } else {
+    // Contributor packages build without the production updater signing key.
+    args.push("--config", JSON.stringify({ bundle: { createUpdaterArtifacts: false } }));
+  }
+  run(process.execPath, [root + "/node_modules/@tauri-apps/cli/tauri.js", ...args, "--", "--locked"]);
 }
