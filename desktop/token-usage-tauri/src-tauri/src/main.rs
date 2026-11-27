@@ -5,7 +5,6 @@
 mod collector;
 mod credentials;
 mod cursor_csv;
-mod hourly;
 mod local_adapters;
 mod model;
 #[cfg(target_os = "macos")]
@@ -88,9 +87,6 @@ async fn usage_action(
         app.emit_to("main", "usage-navigate", view)
             .map_err(|_| "无法切换页面。")?;
         return Ok(json!({"ok":true}));
-    }
-    if action == "hourly" {
-        return store.hourly().await;
     }
     if action == "leaderboard" {
         return store.leaderboard(value).await;

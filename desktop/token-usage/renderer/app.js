@@ -1,4 +1,4 @@
-import { dailyChart, hourlyChart } from "./trends.mjs";
+import { dailyChart } from "./trends.mjs";
 import { mountUpdater } from "./updater.mjs";
 import { DEFAULT_CLIENTS } from "./source-catalog.mjs";
 import { safeAvatarUrl } from "./profile.mjs";
@@ -50,34 +50,6 @@ let current = null,
   report = null,
   signature = "";
 let stackDimension = "model";
-let hourlyKey = "", hourlyFetched = 0, hourlyPending = false;
-function hourKey() {
-  return JSON.stringify([Math.floor(Date.now()/3600000), current?.sources?.codex, current?.sources?.claude, current?.lastCollectedAt]);
-}
-async function loadHourly(force = false) {
-  const key = hourKey();
-  if (!current || hourlyPending || (!force && key === hourlyKey && Date.now()-hourlyFetched < 300000)) return;
-  hourlyPending = true;
-  $("refresh-hourly").disabled = true;
-  $("hourly-status").textContent = "正在读取本机小时记录…";
-  $("hourly-plot").replaceChildren();
-  try {
-    const result = await window.clubUsage.action("hourly");
-    if (!result?.ok || !Array.isArray(result.hours)) throw new Error();
-    if (hourKey() !== key) return;
-    hourlyKey = key; hourlyFetched = Date.now();
-    if (result.sources.length) {
-      $("hourly-status").textContent = "北京时间 · " + result.sources.map(id=>CLIENTS[id]).join("、") + " · 缓存命中率按输入 Token 加权";
-      hourlyChart(result.hours);
-    } else $("hourly-status").textContent = "在统计来源中开启 Codex 或 Claude Code，即可查看小时趋势。";
-  } catch {
-    hourlyFetched = 0;
-    $("hourly-status").textContent = "本次未能读取小时记录，请刷新重试。";
-  } finally {
-    hourlyPending = false; $("refresh-hourly").disabled = false;
-    if (view === "today" && hourKey() !== key) void loadHourly();
-  }
-}
 let boardPeriod = "7d";
 let selectControls = [];
 const board = new CommunityBoard((period) => window.clubUsage.action("leaderboard", period));
@@ -574,24 +546,22 @@ async function loadBoard(force = false) {
   if (view === "leaderboard") renderBoard();
 }
 function changeView(next) {
-  if (!["overview", "today", "tools", "sources", "leaderboard", "settings"].includes(next)) return;
+  if (!["overview", "tools", "sources", "leaderboard", "settings"].includes(next)) return;
   view = next;
   for (const control of selectControls) control.close();
   if (next === "settings" && current?.linked)
     void window.clubUsage.action("profile").catch(() => {});
   $("page-title").textContent = {
     overview: "总览",
-    today: "小时趋势",
     tools: "工具与模型",
     sources: "统计来源",
     leaderboard: "社区 Token 排行榜",
     settings: "设置",
   }[next];
-  for (const n of ["overview", "today", "tools", "sources", "leaderboard", "settings"])
+  for (const n of ["overview", "tools", "sources", "leaderboard", "settings"])
     $(n + "-view").hidden = n !== next;
   if (next === "settings") markUpdateRead?.();
-  $("data-controls").hidden = ["today", "settings", "sources", "leaderboard"].includes(next);
-  if (next === "today") void loadHourly();
+  $("data-controls").hidden = ["settings", "sources", "leaderboard"].includes(next);
   if (next === "leaderboard") void loadBoard();
   for (const b of document.querySelectorAll("nav [data-view]")) {
     if (b.dataset.view === next) b.setAttribute("aria-current", "page");
@@ -607,7 +577,6 @@ function changeView(next) {
 }
 function render(state) {
   current = state;
-  if (view === "today") void loadHourly();
   if (board.site !== state.site) {
     board.useSite(state.site);
     if (view === "leaderboard") void loadBoard();
@@ -773,7 +742,6 @@ for (const [id, name] of Object.entries(CLIENTS)) {
 }
 for (const button of document.querySelectorAll("[data-view]"))
   button.onclick = () => changeView(button.dataset.view);
-$("refresh-hourly").onclick = () => loadHourly(true);
 for (const button of document.querySelectorAll("[data-stack]")) {
   button.onclick = () => {
     stackDimension = button.dataset.stack;
@@ -811,7 +779,4 @@ const markUpdateRead = mountUpdater(window.clubUsage, document);
 window.clubUsage.subscribe(render);
 window.clubUsage.navigate(changeView);
 window.clubUsage.state().then(render);
-setInterval(() => {
-  renderCharts();
-  if (view === "today" && !document.hidden && hourlyFetched && hourlyKey !== hourKey()) void loadHourly();
-}, 60_000);
+setInterval(renderCharts, 60_000);

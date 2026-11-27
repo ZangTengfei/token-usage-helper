@@ -29,13 +29,6 @@
               >
                 <path d="M4 19V12h3v7M10 19V5h3v14M16 19V9h3v10" /></svg></span
             >总览</button
-          ><button data-view="today" title="小时趋势">
-            <span class="nav-icon tone-blue" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="9.5" />
-                <path d="M12 6.5V12l4 2.5" />
-              </svg>
-            </span>小时趋势</button
           ><button data-view="tools">
             <span class="nav-icon tone-blue">
               <svg
@@ -255,12 +248,6 @@
               </details>
             </section>
           </div>
-        </section>
-        <section id="today-view" class="view" hidden>
-          <section class="panel"><div class="section-heading"><h2>近 24 小时趋势</h2><button id="refresh-hourly">刷新</button></div>
-            <p id="hourly-status" class="hint" role="status"></p><div id="hourly-plot" class="trend-plot"></div>
-            <div class="trend-legend"><span><i class="rate-dot"></i>缓存命中率 · 左轴</span><span><i class="token-dot"></i>总 Token · 右轴</span></div>
-          </section>
         </section>
         <section id="tools-view" class="view" hidden>
           <div class="report-summary">
