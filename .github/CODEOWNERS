@@ -1,0 +1,5 @@
+# 发布流程、签名配置和更新地址只由维护者审核。
+/.github/ @ZangTengfei
+/scripts/ @ZangTengfei
+/desktop/token-usage-tauri/src-tauri/tauri.conf.json @ZangTengfei
+/sources.json @ZangTengfei

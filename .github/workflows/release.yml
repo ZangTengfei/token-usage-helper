@@ -1,0 +1,130 @@
+name: 发布 Token 用量助手
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '版本号，须与 main 上的客户端版本一致，例如 0.5.20'
+        required: true
+        type: string
+      notes:
+        description: '更新说明'
+        required: true
+        type: string
+      target:
+        description: '构建平台'
+        type: choice
+        options: [all, macos, windows]
+        default: all
+      publish:
+        description: '立即发布到社区下载入口（关闭则保存后台草稿）'
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: desktop-release
+  cancel-in-progress: false
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(inputs.target == 'windows' && '[{"os":"windows-latest","platform":"windows","arch":"x64"}]' || inputs.target == 'macos' && '[{"os":"macos-15","platform":"macos","arch":"arm64"}]' || '[{"os":"macos-15","platform":"macos","arch":"arm64"},{"os":"windows-latest","platform":"windows","arch":"x64"}]') }}
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    timeout-minutes: 45
+    environment: desktop-release
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            desktop/token-usage-tauri/package-lock.json
+      - name: 安装依赖
+        run: |
+          npm ci
+          npm ci --prefix desktop/token-usage-tauri
+          rustup show
+      - name: 核对版本号
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          node --input-type=module -e '
+            import { readVersion } from "./scripts/desktop-release/version.mjs";
+            const current = await readVersion();
+            if (current !== process.env.RELEASE_VERSION) throw Error(`main 上的客户端版本是 ${current}，请先合并 npm run version:set -- ${process.env.RELEASE_VERSION} 的提交`);
+          '
+      - name: 验证发布流程
+        run: npm run desktop:release:verify
+      - name: 写入更新说明
+        env:
+          RELEASE_NOTES: ${{ inputs.notes }}
+        run: |
+          mkdir -p output/desktop-releases
+          node -e 'require("fs").writeFileSync("output/desktop-releases/notes.txt", process.env.RELEASE_NOTES)'
+      - name: 构建并上传后台
+        env:
+          TENCENT_COS_SECRET_ID: ${{ secrets.TENCENT_COS_SECRET_ID }}
+          TENCENT_COS_SECRET_KEY: ${{ secrets.TENCENT_COS_SECRET_KEY }}
+          TENCENT_COS_BUCKET: ${{ vars.TENCENT_COS_BUCKET }}
+          TENCENT_COS_REGION: ${{ vars.TENCENT_COS_REGION }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          RELEASE_PLATFORM: ${{ matrix.platform }}
+          RELEASE_ARCH: ${{ matrix.arch }}
+          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_PUBLISH: ${{ inputs.publish }}
+          DESKTOP_RELEASE_SITE: https://changzhouai.club
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          DESKTOP_RELEASE_EMAIL: ${{ secrets.DESKTOP_RELEASE_EMAIL }}
+          DESKTOP_RELEASE_PASSWORD: ${{ secrets.DESKTOP_RELEASE_PASSWORD }}
+        run: |
+          if [ "$RELEASE_PUBLISH" = true ]; then
+            node -e 'for (const key of ["TENCENT_COS_SECRET_ID", "TENCENT_COS_SECRET_KEY", "TENCENT_COS_BUCKET", "TENCENT_COS_REGION"]) if (!process.env[key]) throw Error(`缺少 ${key}`)'
+          fi
+          mode=--upload
+          if [ "$RELEASE_PUBLISH" = true ]; then mode=--publish; fi
+          npm run desktop:release -- --version "$RELEASE_VERSION" --platform "$RELEASE_PLATFORM" --arch "$RELEASE_ARCH" "$mode" --notes-file output/desktop-releases/notes.txt
+      - name: 发布应用内更新
+        if: inputs.publish
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_PLATFORM: ${{ matrix.platform }}
+          TENCENT_COS_SECRET_ID: ${{ secrets.TENCENT_COS_SECRET_ID }}
+          TENCENT_COS_SECRET_KEY: ${{ secrets.TENCENT_COS_SECRET_KEY }}
+          TENCENT_COS_BUCKET: ${{ vars.TENCENT_COS_BUCKET }}
+          TENCENT_COS_REGION: ${{ vars.TENCENT_COS_REGION }}
+        run: |
+          node -e '
+            const fs = require("fs"), cp = require("child_process");
+            const { RELEASE_VERSION: version, RELEASE_PLATFORM: platform } = process.env;
+            const arch = platform === "macos" ? "arm64" : "x64";
+            const result = JSON.parse(fs.readFileSync(`output/desktop-releases/${version}-${platform}-${arch}-result.json`));
+            if (!result.updater?.signatureVerified) throw Error("缺少已验证更新包");
+            cp.execFileSync(process.execPath, ["scripts/publish-token-usage-updater.mjs", "--file", result.updater.file, "--version", version, "--platform", platform, "--notes-file", "output/desktop-releases/notes.txt", "--apply"], { stdio: "inherit" });
+          '
+      - name: 保留安装包与版本清单
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-release-${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
+            output/desktop-releases/*.zip
+            output/desktop-releases/*.exe
+            output/desktop-releases/*.sig
+            output/desktop-releases/*.tar.gz
+            output/desktop-releases/*-updater.json
+            output/desktop-releases/*-result.json
+            desktop/token-usage-tauri/package.json
+            desktop/token-usage-tauri/package-lock.json
+            desktop/token-usage-tauri/src-tauri/Cargo.toml
+            desktop/token-usage-tauri/src-tauri/Cargo.lock
+            desktop/token-usage-tauri/src-tauri/tauri.conf.json
+          retention-days: 14
